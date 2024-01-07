@@ -13,7 +13,7 @@ class MinMaxPlayer(Player):
     def __init__(self, max_depth: int = None, use_alpha_beta_pruning: bool = False, verbose: bool = False) -> None:
         super().__init__()
 
-        self.max_depth = max_depth
+        self.max_depth = 3 if max_depth is None else max_depth
         self.use_alpha_beta_pruning = use_alpha_beta_pruning
         self.verbose = verbose
 
@@ -34,7 +34,7 @@ class MinMaxPlayer(Player):
         def min_side(self: "MinMaxPlayer", game: "CustomGame", alpha: int, beta: int, depth: int) -> int:
             winner = game.check_winner()
             if (self.max_depth is not None and depth >= self.max_depth) or winner != -1:
-                return game.score()
+                return game.score
         
             min_found = np.infty
 
@@ -52,7 +52,7 @@ class MinMaxPlayer(Player):
         def max_side(self: "MinMaxPlayer", game: "CustomGame", alpha: int, beta: int, depth: int) -> int:
             winner = game.check_winner()
             if (self.max_depth is not None and depth >= self.max_depth) or winner != -1:
-                return game.score()
+                return game.score
                 
             max_found = -np.infty
             

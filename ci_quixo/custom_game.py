@@ -57,6 +57,11 @@ class CustomGame(Game):
 
     def __repr__(self) -> str:
         return f"{self.current_player_idx}|{self._board.flatten()}"
+    
+    @property
+    def next_move_for(self) -> int:
+        """This is a fix to the fact that current_player_idx somehow indicates the player that has already moved (1 on game start??)"""
+        return 1-self.current_player_idx
 
     def __str__(self) -> str:
         arr: list[int] = deepcopy(self._board).flatten().tolist()
@@ -89,7 +94,8 @@ class CustomGame(Game):
         inverted[zeros] = 1
         inverted[ones] = 0
         inv_rotations = [CustomGame.from_board(np.rot90(inverted, k=k), 1-start.current_player_idx) for k in range(4)]
-        all_variants = set([*rotations, *flip_rotations, *inv_rotations])
+        # all_variants = set([*rotations, *flip_rotations, *inv_rotations])
+        all_variants = set([*rotations, *flip_rotations])
         return sorted([str(it) for it in list(all_variants)])
     
     def to_canon(start: "CustomGame") -> tuple["CustomGame", int]:
@@ -110,7 +116,19 @@ class CustomGame(Game):
     def __eq__(self, other: "CustomGame") -> bool:
         return self.__hash__() == other.__hash__()
     
-    def valid_moves(self, player: int, filter_duplicates: bool = True) -> tuple[CompleteMove]:
+    @staticmethod
+    def convert_canon_move(canon_board: "CustomGame", canon_move: "CompleteMove", original_board: "CustomGame") -> "CompleteMove":
+        target_board = str(canon_board.simulate_move(canon_move).to_canon()[0])
+        for move in original_board.valid_moves(None, False):
+            temp_board = original_board.simulate_move(move)
+            if str(temp_board.to_canon()[0]) == target_board:
+                return move
+        debug = f"canon= {canon_board} move= {canon_move} original= {original_board}"
+        raise Exception(f"Unable to convert move from canon to non-canon\n{debug}")
+    
+    def valid_moves(self, player: int = None, filter_duplicates: bool = True) -> tuple[CompleteMove]:
+        if player is None:
+            player = self.next_move_for
         valids = [it for it in POSSIBLE_MOVES if self._board[it.position[::-1]] == -1 or self._board[it.position[::-1]] == player]
         if not filter_duplicates:
             return valids
@@ -123,6 +141,8 @@ class CustomGame(Game):
         for _, moves in s.items():
             non_duplicate.append(moves[0])
         return tuple(non_duplicate)
+    
+    @property
     def score(self) -> int:
         winner = self.check_winner()
         if winner != -1:
@@ -149,6 +169,13 @@ class CustomGame(Game):
         score = score_x - score_o
         score *= 1 if self.current_player_idx == 0 else -1
         return score
+    
+    def simulate_move(self, move: "CompleteMove") -> "CustomGame":
+        copy = deepcopy(self)
+        success = copy._Game__move(*move, self.next_move_for)
+        if success:
+            copy.current_player_idx = self.next_move_for
+        return copy
 
 if __name__ == "__main__":
     from random import choice
