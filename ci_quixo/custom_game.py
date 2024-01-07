@@ -101,6 +101,8 @@ class CustomGame(Game):
         symmetries = canon.symmetries()
         return CustomGame.from_str(symmetries[idx])
     
+    def from_game(game: "Game") -> "CustomGame":
+        return CustomGame.from_board(game.get_board(), game.get_current_player())
 
     def __hash__(self) -> str:
         return str(self).__hash__()
@@ -109,7 +111,7 @@ class CustomGame(Game):
         return self.__hash__() == other.__hash__()
     
     def valid_moves(self, player: int) -> tuple[CompleteMove]:
-        return [it for it in POSSIBLE_MOVES if self._board[it.position] == -1 or self._board[it.position] == player]
+        return [it for it in POSSIBLE_MOVES if self._board[it.position[::-1]] == -1 or self._board[it.position[::-1]] == player]
 
 
 if __name__ == "__main__":
