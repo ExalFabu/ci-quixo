@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.12"
 numpy = "^1.26.3"
 pytest = "^7.4.4"
+tqdm = "^4.66.1"
 
 
 [build-system]

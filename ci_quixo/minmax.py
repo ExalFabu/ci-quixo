@@ -10,63 +10,77 @@ if TYPE_CHECKING:
 
 class MinMaxPlayer(Player):
     
-    def __init__(self, max_depth: int = None, use_alpha_beta_pruning: bool = False) -> None:
+    def __init__(self, max_depth: int = None, use_alpha_beta_pruning: bool = False, verbose: bool = False) -> None:
         super().__init__()
 
         self.max_depth = max_depth
         self.use_alpha_beta_pruning = use_alpha_beta_pruning
-        self._init_ab()
-
-    def _init_ab(self):
-        self._alpha, self._beta = -np.inf, np.inf
-
+        self.verbose = verbose
 
     def make_move(self, game: Game) -> "CompleteMove":
+        self.verbose and print("Deciding move on the following board")
         cg = CustomGame.from_game(game)
-        best_move = self._minmax(0, cg, True)[1]
+        self.verbose and cg.pprint()
+        best_move = self._minmax(cg)
         if best_move is None:
-            best_move = random.choice(cg.valid_moves())
-        print("I made a move...")
+            best_move = random.choice(cg.valid_moves(cg.get_current_player()))
+        cg._Game__move(*best_move, cg.current_player_idx)
+        self.verbose and print(f"Played {best_move=}")
+        self.verbose and cg.pprint()
         return best_move
     
-    def _minmax(self, depth: int, game: "CustomGame", maximixe: bool) -> tuple[float, "CompleteMove"]:
-        winner = game.check_winner()
-        if winner != -1:
-            return 25 * winner, None
-        if self.max_depth is not None and depth >= self.max_depth:
-            return 0, None
+    def _minmax(self, game: "CustomGame") -> "CompleteMove":
 
-        if depth == 0:
-            self._init_ab()        
+        def min_side(self: "MinMaxPlayer", game: "CustomGame", alpha: int, beta: int, depth: int) -> int:
+            winner = game.check_winner()
+            if (self.max_depth is not None and depth >= self.max_depth) or winner != -1:
+                return game.score()
+        
+            min_found = np.infty
+
+            for move in game.valid_moves(game.current_player_idx):
+                copy = deepcopy(game)
+                assert copy._Game__move(*move, copy.current_player_idx), "Somehow move was invalid?????"
+                copy.current_player_idx = 1-copy.current_player_idx
+                min_found = min(min_found, max_side(self, game, alpha, beta, depth+1))
+                beta = min(beta, min_found)
+                if alpha > beta and self.use_alpha_beta_pruning:
+                    break
+            return min_found
+
+            
+        def max_side(self: "MinMaxPlayer", game: "CustomGame", alpha: int, beta: int, depth: int) -> int:
+            winner = game.check_winner()
+            if (self.max_depth is not None and depth >= self.max_depth) or winner != -1:
+                return game.score()
+                
+            max_found = -np.infty
+            
+            for move in game.valid_moves(game.current_player_idx):
+                copy = deepcopy(game)
+                assert copy._Game__move(*move, copy.current_player_idx), "Somehow move was invalid?????"
+                copy.current_player_idx = 1-copy.current_player_idx
+                max_found = max(max_found, min_side(self, game, alpha, beta, depth+1))
+                alpha = max(alpha, max_found)
+                if alpha > beta and self.use_alpha_beta_pruning:
+                    break
+            return max_found
 
         best_move = None
-        if maximixe:
-            for move in game.valid_moves(game.get_current_player()):
-                copied = deepcopy(game)
-                assert copied._Game__move(*move, copied.current_player_idx), f"Somehow got an invalid move while iterating from valid moves, {copied}, {move}"
-                score, _ = self._minmax(depth+1, copied, False)
-                if score > self._alpha:
-                    self._alpha = score
-                    best_move = move
-                
-                if self.use_alpha_beta_pruning and self._alpha > self._beta:
-                    break
-            return self._alpha, best_move
-        else:
-            for move in game.valid_moves(game.get_current_player()):
-                copied = deepcopy(game)
-                assert copied._Game__move(*move, copied.current_player_idx), "Somehow got an invalid move while iterating from valid moves"
-                score, _ = self._minmax(depth+1, copied, True)
-                if score < self._beta:
-                    self._beta = score
-                    best_move = move
-                
-                if self.use_alpha_beta_pruning and self._alpha > self._beta:
-                    break
-            return self._beta, best_move
+        alpha, beta = -np.inf, np.inf
+
+        for move in game.valid_moves(game.current_player_idx):
+            copy = deepcopy(game)
+            assert copy._Game__move(*move, copy.current_player_idx), "Somehow move was invalid?????"
+            copy.current_player_idx = 1-copy.current_player_idx
+            min_score = min_side(self, game, alpha, beta, 1)
+            if min_score > alpha:
+                alpha = min_score
+                best_move = move
+        self.verbose and print(f"Found best move with score {alpha}")
+        return best_move
+
 
 if __name__ == "__main__":
-    from main import RandomPlayer
-    mm = MinMaxPlayer(20, True)
-    rp = RandomPlayer()
-    game = Game()
+    from helper import evaluate
+    evaluate(MinMaxPlayer(3, True), None, 10, True)

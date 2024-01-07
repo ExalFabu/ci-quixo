@@ -1,6 +1,6 @@
 import numpy as np
 from game import Game, Move
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from copy import deepcopy
 
 Position = namedtuple("Position", ["x", "y"], defaults=[0, 0])
@@ -110,9 +110,45 @@ class CustomGame(Game):
     def __eq__(self, other: "CustomGame") -> bool:
         return self.__hash__() == other.__hash__()
     
-    def valid_moves(self, player: int) -> tuple[CompleteMove]:
-        return [it for it in POSSIBLE_MOVES if self._board[it.position[::-1]] == -1 or self._board[it.position[::-1]] == player]
+    def valid_moves(self, player: int, filter_duplicates: bool = True) -> tuple[CompleteMove]:
+        valids = [it for it in POSSIBLE_MOVES if self._board[it.position[::-1]] == -1 or self._board[it.position[::-1]] == player]
+        if not filter_duplicates:
+            return valids
+        s = defaultdict(list)
+        for valid in valids:
+            copy = deepcopy(self)
+            copy._Game__move(*valid, player)
+            s[str(copy)].append(valid)
+        non_duplicate = []
+        for _, moves in s.items():
+            non_duplicate.append(moves[0])
+        return tuple(non_duplicate)
+    def score(self) -> int:
+        winner = self.check_winner()
+        if winner != -1:
+            return (5**5) * 1 if winner == self.current_player_idx else -1
+        transposed = self._board.transpose()
+        
+        x_score = []
+        o_score = []
+        for row, column in zip(self._board, transposed):
+            x_score.append(sum(row == 0))
+            x_score.append(sum(column == 0))
+            o_score.append(sum(row == 1))
+            o_score.append(sum(column == 1))
+        
+        diag = self._board.diagonal()
+        second_diag = self._board[:, ::-1].diagonal()
 
+        x_score.append(sum(diag == 0))
+        o_score.append(sum(diag == 1))
+        x_score.append(sum(second_diag == 0))
+        o_score.append(sum(second_diag == 1))
+
+        score_x, score_o = 5**max(x_score), 5**max(o_score)
+        score = score_x - score_o
+        score *= 1 if self.current_player_idx == 0 else -1
+        return score
 
 if __name__ == "__main__":
     from random import choice
