@@ -1,5 +1,5 @@
 from game import Player, Game
-from custom_game import CustomGame
+from custom_game import CustomGame, POSSIBLE_MOVES
 from typing import TYPE_CHECKING
 import numpy as np
 from collections import defaultdict
@@ -10,11 +10,12 @@ if TYPE_CHECKING:
 
 class MinMaxPlayer(Player):
     
-    def __init__(self, max_depth: int = None, use_alpha_beta_pruning: bool = True, verbose: bool = False) -> None:
+    def __init__(self, max_depth: int = None, *, alpha_beta: bool = True, pruning: bool = True, verbose: bool = False) -> None:
         super().__init__()
 
         self.max_depth = 3 if max_depth is None else max_depth
-        self.use_alpha_beta_pruning = use_alpha_beta_pruning
+        self.use_alpha_beta_pruning = alpha_beta
+        self.use_symmetries = pruning
         self.verbose = verbose
         self.stats = defaultdict(int)
 
@@ -28,6 +29,14 @@ class MinMaxPlayer(Player):
     
     def _minmax(self, game: "CustomGame") -> "CompleteMove":
 
+        def moves_getter(game: "CustomGame") -> list["CompleteMove"]:
+            if self.use_symmetries is None:
+                return POSSIBLE_MOVES
+            elif self.use_symmetries is True:
+                return game.valid_moves(None, True, True)
+            else: 
+                return game.valid_moves(None, True, True)
+
         def min_side(self: "MinMaxPlayer", game: "CustomGame", alpha: int, beta: int, depth: int) -> int:
             winner = game.check_winner()
             if (self.max_depth is not None and depth >= self.max_depth) or winner != -1:
@@ -36,7 +45,7 @@ class MinMaxPlayer(Player):
         
             min_found = np.infty
 
-            for move in game.valid_moves():
+            for move in moves_getter(game):
                 copy = game.simulate_move(move)
                 copy.current_player_idx = 1-copy.current_player_idx
                 min_found = min(min_found, max_side(self, copy, alpha, beta, depth+1))
@@ -54,7 +63,7 @@ class MinMaxPlayer(Player):
                 
             max_found = -np.infty
             
-            for move in game.valid_moves():
+            for move in moves_getter(game):
                 copy = game.simulate_move(move)
                 max_found = max(max_found, min_side(self, copy, alpha, beta, depth+1))
                 alpha = max(alpha, max_found)
@@ -65,7 +74,7 @@ class MinMaxPlayer(Player):
         best_move = None
         alpha, beta = -np.inf, np.inf
 
-        for move in game.valid_moves():
+        for move in moves_getter(game):
             copy = game.simulate_move(move)
             min_score = min_side(self, copy, alpha, beta, 1)
             if min_score > alpha:
@@ -77,5 +86,5 @@ class MinMaxPlayer(Player):
 
 if __name__ == "__main__":
     from helper import evaluate
-    m = MinMaxPlayer()
-    evaluate(m, None, 15, True)
+    m = MinMaxPlayer(pruning=True)
+    # evaluate(m, None, 1, True)

@@ -1,11 +1,12 @@
 import numpy as np
 from typing import TYPE_CHECKING
-from main import RandomPlayer, Game
+from main import Move, RandomPlayer, Game
 from tqdm.auto import trange
 from custom_game import CustomGame
+from main import Player
 if TYPE_CHECKING:
+    from custom_game import CompleteMove
     from game import Game
-    from main import Player
 
 def pprint_board(game: "Game"):
     board: np.ndarray = game.get_board()
@@ -37,3 +38,36 @@ def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool =
         print(f"Wins as 1st: {won_as_first:.2%}")
         print(f"Wins as 2nd: {won_as_second:.2%}")
     return wins, won_as_first, won_as_second
+
+class Human(Player):
+    def make_move(self, game: "Game") -> "CompleteMove":
+        print("---\nIt's your turn")
+        CustomGame.from_game(game).pprint()
+        x, y, dir = None, None, None
+        while (x is None or y is None or dir is None) or not (0 <= x <= 4) or not (0 <= y <= 4) or not dir in ['w', 'a', 's', 'd', 't', 'b', 'l', 'r']:
+            try:
+                x, y, dir = input("Your move (x, y, dir): ").split(" ")
+                if not x.isdigit() or not y.isdigit():
+                    x, y = None, None
+                    continue
+                x, y = int(x), int(y)
+            except ValueError:
+                continue
+        match dir:
+            case 'b':
+                dir = Move.BOTTOM
+            case 's':
+                dir = Move.BOTTOM
+            case 'u':
+                dir = Move.TOP
+            case 'w':
+                dir = Move.TOP
+            case 'a':
+                dir = Move.LEFT
+            case 'l': 
+                dir = Move.LEFT
+            case 'r':
+                dir = Move.RIGHT
+            case 'd':
+                dir = Move.RIGHT
+        return ((x,y), dir)

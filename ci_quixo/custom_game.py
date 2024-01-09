@@ -134,7 +134,7 @@ class CustomGame(Game):
         debug = f"canon= {canon_board} move= {canon_move} original= {original_board}"
         raise Exception(f"Unable to convert move from canon to non-canon\n{debug}")
     
-    def valid_moves(self, player: int = None, filter_duplicates: bool = True) -> tuple[CompleteMove]:
+    def valid_moves(self, player: int = None, filter_duplicates: bool = True, canon_unique: bool = False) -> tuple[CompleteMove]:
         if player is None:
             player = self.next_move_for
         valids = [it for it in POSSIBLE_MOVES if self._board[it.position[::-1]] == -1 or self._board[it.position[::-1]] == player]
@@ -144,7 +144,10 @@ class CustomGame(Game):
         for valid in valids:
             copy = deepcopy(self)
             copy._Game__move(*valid, player)
-            s[str(copy)].append(valid)
+            if canon_unique:
+                s[str(copy.to_canon()[0])].append(valid)
+            else:
+                s[str(copy)].append(valid)
         non_duplicate = []
         for _, moves in s.items():
             non_duplicate.append(moves[0])
@@ -158,7 +161,7 @@ class CustomGame(Game):
         players = [player1, player2]
         winner = -1
         if verbose:
-            pbar = tqdm()
+            pbar = tqdm(range(100))
             pbar.disable = not verbose
             pbar.unit = "move"
         while winner < 0:
