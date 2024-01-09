@@ -13,10 +13,11 @@ class MinMaxPlayer(Player):
     def __init__(self, max_depth: int = None, *, alpha_beta: bool = True, pruning: bool = True, verbose: bool = False) -> None:
         super().__init__()
 
-        self.max_depth = 3 if max_depth is None else max_depth
+        self.max_depth = 2 if max_depth is None else max_depth
         self.use_alpha_beta_pruning = alpha_beta
         self.use_symmetries = pruning
         self.verbose = verbose
+        self.history: dict[str, "CompleteMove"] = dict()
         self.stats = defaultdict(int)
 
     def make_move(self, game: Game) -> "CompleteMove":
@@ -74,6 +75,10 @@ class MinMaxPlayer(Player):
         best_move = None
         alpha, beta = -np.inf, np.inf
 
+        if str(game) in self.history:
+            self.stats['cache-hit'] += 1
+            return self.history[str(game)]
+
         for move in moves_getter(game):
             copy = game.simulate_move(move)
             min_score = min_side(self, copy, alpha, beta, 1)
@@ -81,10 +86,11 @@ class MinMaxPlayer(Player):
                 alpha = min_score
                 best_move = move
         self.stats['EVALS'] += 1
+        self.history[str(game)] = best_move
         return best_move
 
 
 if __name__ == "__main__":
     from helper import evaluate
     m = MinMaxPlayer(pruning=True)
-    # evaluate(m, None, 1, True)
+    evaluate(m, None, 10, True)
