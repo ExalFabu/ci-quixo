@@ -2,6 +2,11 @@ import numpy as np
 from game import Game, Move
 from collections import namedtuple, defaultdict
 from copy import deepcopy
+from typing import TYPE_CHECKING
+from tqdm.auto import tqdm
+
+if TYPE_CHECKING:
+    from main import Player
 
 Position = namedtuple("Position", ["x", "y"], defaults=[0, 0])
 POSSIBLE_POSITIONS = tuple(
@@ -84,18 +89,21 @@ class CustomGame(Game):
         return g
     
     def symmetries(start: "CustomGame") -> list[str]:
-        starting_board = start.get_board()
-        rotations = [CustomGame.from_board(np.rot90(starting_board, k=k), start.current_player_idx) for k in range(4)]
-        flip = np.fliplr(starting_board)
-        flip_rotations = [CustomGame.from_board(np.rot90(flip, k=k), start.current_player_idx) for k in range(4)] 
-        inverted = deepcopy(starting_board)
+        def rot_flip(board: np.ndarray, player_idx: int) -> list["CustomGame"]:
+            starting_board = board
+            rotations = [CustomGame.from_board(np.rot90(starting_board, k=k), player_idx) for k in range(4)]
+            flip = np.fliplr(starting_board)
+            flip_rotations = [CustomGame.from_board(np.rot90(flip, k=k), player_idx) for k in range(4)]
+            return [*rotations, *flip_rotations]
+        
+        inverted = start.get_board()
         zeros = inverted == 0
         ones = inverted == 1
         inverted[zeros] = 1
         inverted[ones] = 0
-        inv_rotations = [CustomGame.from_board(np.rot90(inverted, k=k), 1-start.current_player_idx) for k in range(4)]
-        # all_variants = set([*rotations, *flip_rotations, *inv_rotations])
-        all_variants = set([*rotations, *flip_rotations])
+        
+        all_variants = set([*rot_flip(start.get_board(), start.current_player_idx), *rot_flip(inverted, 1-start.current_player_idx)])
+        # all_variants = set([*rot_flip(start.get_board(), start.current_player_idx)])
         return sorted([str(it) for it in list(all_variants)])
     
     def to_canon(start: "CustomGame") -> tuple["CustomGame", int]:
@@ -142,6 +150,32 @@ class CustomGame(Game):
             non_duplicate.append(moves[0])
         return tuple(non_duplicate)
     
+    def is_valid(self: "CustomGame", move: "CompleteMove") -> bool:
+        return move in self.valid_moves(None, False)
+    
+    def play(self, player1: "Player", player2: "Player", verbose: bool = False) -> int:
+        '''Play the game. Returns the winning player'''
+        players = [player1, player2]
+        winner = -1
+        if verbose:
+            pbar = tqdm()
+            pbar.disable = not verbose
+            pbar.unit = "move"
+        while winner < 0:
+            ok = False
+            counter = 0
+            verbose and pbar.set_postfix({"Player": self.next_move_for, "wrong-moves": counter})
+            while not ok:
+                move = players[self.next_move_for].make_move(self)
+                ok = self.is_valid(move)
+                counter += 1
+                if verbose and counter > 1:
+                    pbar.set_postfix({"Player": self.next_move_for, "wrong-moves": counter})
+            self = self.simulate_move(move)
+            winner = self.check_winner()
+            verbose and pbar.update(1)
+        return winner
+    
     @property
     def score(self) -> int:
         winner = self.check_winner()
@@ -172,13 +206,18 @@ class CustomGame(Game):
     
     def simulate_move(self, move: "CompleteMove") -> "CustomGame":
         copy = deepcopy(self)
-        success = copy._Game__move(*move, self.next_move_for)
+        investigating = copy.is_valid(move)
+        success = copy._Game__move(*move, copy.next_move_for)
         if success:
-            copy.current_player_idx = self.next_move_for
+            copy.current_player_idx = copy.next_move_for
+
+        if success != investigating:
+            print("AAAA SOMEHOW IS_VALID is different thant Game.move validation")
+            print(f"board {copy} - move {move} move for {copy.next_move_for}")
+
         return copy
 
 if __name__ == "__main__":
     from random import choice
     a = CustomGame()
     p = CompleteMove((0, 0), Move.BOTTOM)
-    a._Game__move(*choice(POSSIBLE_MOVES), choice([0, 1]))

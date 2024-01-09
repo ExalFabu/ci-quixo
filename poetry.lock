@@ -12,6 +12,20 @@ files = [
 ]
 
 [[package]]
+name = "dill"
+version = "0.3.7"
+description = "serialize all of Python"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "dill-0.3.7-py3-none-any.whl", hash = "sha256:76b122c08ef4ce2eedcd4d1abd8e641114bfc6c2867f49f3c41facf65bf19f5e"},
+    {file = "dill-0.3.7.tar.gz", hash = "sha256:cc1c8b182eb3013e24bd475ff2e9295af86c1a38eb1aff128dac8962a9ce3c03"},
+]
+
+[package.extras]
+graph = ["objgraph (>=1.7.2)"]
+
+[[package]]
 name = "iniconfig"
 version = "2.0.0"
 description = "brain-dead simple config-ini parsing"
@@ -135,5 +149,5 @@ telegram = ["requests"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.12"
-content-hash = "8d383a5ccf2272dfdc8f57d7177fcca13aaf9b7e6042e1534f09cb05fbbfb8e5"
+python-versions = "^3.11"
+content-hash = "0f7c69ea1b018d7039e0c5d8eb9630235ad2087d3fe4e2d3e5e5300978050402"
