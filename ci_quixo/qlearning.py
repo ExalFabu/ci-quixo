@@ -6,7 +6,7 @@ from main import Player
 from typing import DefaultDict
 from dataclasses import dataclass, field
 from tqdm.auto import trange, tqdm
-import random
+import random, dill
 import numpy as np
 from main import RandomPlayer
 
@@ -34,6 +34,7 @@ def clamp(value, min_, max_):
 
 @dataclass
 class QLearning(Player):
+    
     qtable: QTable = field(
         default_factory=lambda: defaultdict(QLearning.__inner_defdict_builder)
     )
@@ -41,9 +42,14 @@ class QLearning(Player):
     discount_rate: float = field(default=0.99)
     exploration_rate: float = field(default=1)
     min_exploration_rate: float = field(default=0.01)
-    exploration_decay_rate: float = field(default=2.5e-5)
+    exploration_decay_rate: float = field(default=2e-4)
     num_of_episodes: int = field(default=1_000)
     stats: dict[str, int] = field(default_factory=lambda: defaultdict(int))
+
+    @staticmethod
+    def DUMP_FILENAME():
+        return "qlearning.npy"
+
 
     def reward(self, board: "CustomGame", move: "CompleteMove", plind: int) -> float:
         target = board.simulate_move(move)
@@ -134,6 +140,7 @@ class QLearning(Player):
                 pbar.set_postfix({"Explored": len(self.qtable.keys())})
 
     def make_move(self, game: Game) -> "CompleteMove":
+        self.stats["EVAL-moves_requested"] += 1
         custom = CustomGame.from_game(game)
         canon, _ = custom.to_canon()
         best_move = None
@@ -156,10 +163,31 @@ class QLearning(Player):
     @staticmethod
     def __inner_defdict_builder() -> DefaultDict["CompleteMove", float]:
         return defaultdict(float)
+    
+    def dump(self: "QLearning"):
+        with open(QLearning.DUMP_FILENAME(), "wb") as f:
+            dill.dump(self.qtable, f)
 
+    def load(self: "QLearning") -> bool:
+        try:
+            with open(QLearning.DUMP_FILENAME(), "rb") as f:
+                self.qtable = dill.load(f)
+            return True
+        except:
+            return False
 
 if __name__ == "__main__":
-    q = QLearning()
-    q.train(None, True)
     from helper import evaluate
-    evaluate(q, None, 10, True)
+    episodes = 10_000
+    q = QLearning(num_of_episodes=episodes)
+    q.load()
+    action: str = None
+    while action is None or not action.isdigit():
+        action = input("1. Train All Over Again\n2. Train on Top of backup\n3. Use Backup only\n> ").strip()
+    action = int(action)
+    if action != 3:
+        if action == 1:
+            q = QLearning(num_of_episodes=episodes)
+        q.train(None, True)
+        q.dump()
+    evaluate(q, None, 100, True)

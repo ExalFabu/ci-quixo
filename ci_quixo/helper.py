@@ -2,6 +2,7 @@ import numpy as np
 from typing import TYPE_CHECKING
 from main import RandomPlayer, Game
 from tqdm.auto import trange
+from custom_game import CustomGame
 if TYPE_CHECKING:
     from game import Game
     from main import Player
@@ -22,7 +23,7 @@ def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool =
         p2 = RandomPlayer()
     won_as_first, won_as_second = 0, 0
     for i in trange(games, desc="Evaluating player", unit="game"):
-        game = Game()
+        game = CustomGame()
         if i % 2 == 0:
             won_as_first += 1 if game.play(p1, p2) == 0 else 0
         else:
