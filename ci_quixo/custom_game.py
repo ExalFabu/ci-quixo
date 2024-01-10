@@ -204,7 +204,7 @@ class CustomGame(Game):
 
         score_x, score_o = 5**max(x_score), 5**max(o_score)
         score = score_x - score_o
-        score *= 1 if self.current_player_idx == 0 else -1
+        score *= 1 if self.current_player_idx == 1 else -1
         return score
     
     def simulate_move(self, move: "CompleteMove") -> "CustomGame":
@@ -212,7 +212,7 @@ class CustomGame(Game):
         investigating = copy.is_valid(move)
         success = copy._Game__move(*move, copy.next_move_for)
         if success:
-            copy.current_player_idx = copy.next_move_for
+            copy.current_player_idx = 1-copy.current_player_idx
 
         if success != investigating:
             print("AAAA SOMEHOW IS_VALID is different thant Game.move validation")

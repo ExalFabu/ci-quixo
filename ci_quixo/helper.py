@@ -20,6 +20,8 @@ def pprint_board(game: "Game"):
         print()
 
 def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool = False) -> tuple[int]:
+    if games % 2 != 0:
+        games += 1
     if p2 is None:
         p2 = RandomPlayer()
     won_as_first, won_as_second = 0, 0
