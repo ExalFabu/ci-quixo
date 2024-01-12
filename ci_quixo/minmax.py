@@ -92,7 +92,7 @@ class MinMaxPlayer(Player):
 
     def _minmax(self, game: "CustomGame") -> "CompleteMove":
         visited_list: list[set[str]] = [set() for _ in range(self.max_depth)]
-
+        whoami = game.get_current_player()
 
         def moves_getter(game: "CustomGame", depth: int) -> list[tuple["CompleteMove", "CustomGame"]]:
             self.stats["MOVES-THEORETICAL"] += 44  # length of POSSIBLE_MOVES
@@ -121,19 +121,21 @@ class MinMaxPlayer(Player):
             self: "MinMaxPlayer", game: "CustomGame", alpha: int, beta: int, depth: int
         ) -> int:
             # print(f"MIN {whoami=} maxing={game.next_move_for}")
+            assert game.current_player_idx == 1-whoami, "Something went awfully wrong"
             htable_value = self.search_in_htable(game, depth, "l")
             if htable_value:
                 return htable_value
 
             winner = game.check_winner()
             if (self.max_depth is not None and depth >= self.max_depth) or winner != -1:
-                score = game.score
+                score = -1 * game.score # We want the score as if I'm the other player (thus, *-1)
                 self.put_in_htable(game, depth, "l", score)
                 return score
 
             min_found = np.infty
 
             for move, copy in moves_getter(game, depth):
+                assert copy.get_current_player() == whoami, "Something went wrong"
                 min_found = min(min_found, max_side(self, copy, alpha, beta, depth + 1))
                 beta = min(beta, min_found)
                 if alpha > beta and self.use_alpha_beta_pruning:
@@ -145,6 +147,7 @@ class MinMaxPlayer(Player):
         def max_side(
             self: "MinMaxPlayer", game: "CustomGame", alpha: int, beta: int, depth: int
         ) -> int:
+            assert game.current_player_idx == whoami, "Something went awfully wrong"
             # print(f"MAX {whoami=} minning={game.next_move_for}")
             htable_value = self.search_in_htable(game, depth, "h")
             if htable_value:
@@ -159,6 +162,7 @@ class MinMaxPlayer(Player):
             max_found = -np.infty
 
             for move, copy in moves_getter(game, depth):
+                assert copy.get_current_player() == 1-whoami, "Something went wrong"
                 max_found = max(max_found, min_side(self, copy, alpha, beta, depth + 1))
                 alpha = max(alpha, max_found)
                 if alpha > beta and self.use_alpha_beta_pruning:
@@ -176,6 +180,7 @@ class MinMaxPlayer(Player):
 
         # print(f"MAX {whoami=} minning={game.next_move_for}")
         for move, copy in moves_getter(game, 0):
+            assert copy.get_current_player() == 1-whoami, "Something went wrong"
             min_score = min_side(self, copy, alpha, beta, 1)
             if min_score > alpha:
                 alpha = min_score
@@ -189,5 +194,5 @@ class MinMaxPlayer(Player):
 if __name__ == "__main__":
     from helper import evaluate, Human
 
-    m = MinMaxPlayer(pruning=4)
+    m = MinMaxPlayer(2, pruning=3, htable=False)
     evaluate(m, None, 10, True)

@@ -136,7 +136,7 @@ class CustomGame(Game):
     
     def valid_moves(self, player: int = None, filter_duplicates: bool = True, canon_unique: bool = False) -> tuple[CompleteMove]:
         if player is None:
-            player = self.next_move_for
+            player = self.current_player_idx
         valids = [it for it in POSSIBLE_MOVES if self._board[it.position[::-1]] == -1 or self._board[it.position[::-1]] == player]
         if not filter_duplicates:
             return valids
@@ -167,15 +167,15 @@ class CustomGame(Game):
         while winner < 0:
             ok = False
             counter = 0
-            verbose and pbar.set_postfix({"Player": self.next_move_for, "wrong-moves": counter})
+            verbose and pbar.set_postfix({"Player": self.current_player_idx, "wrong-moves": counter})
             while not ok:
-                move = players[self.next_move_for].make_move(self)
-                ok = self.is_valid(move)
+                move = players[self.current_player_idx].make_move(self)
+                ok = self._Game__move(*move, self.current_player_idx)
                 counter += 1
                 if verbose and counter > 1:
-                    pbar.set_postfix({"Player": self.next_move_for, "wrong-moves": counter})
-            self = self.simulate_move(move)
+                    pbar.set_postfix({"Player": self.current_player_idx, "wrong-moves": counter})
             winner = self.check_winner()
+            self.current_player_idx = 1-self.current_player_idx
             verbose and pbar.update(1)
         return winner
     
@@ -183,7 +183,7 @@ class CustomGame(Game):
     def score(self) -> int:
         winner = self.check_winner()
         if winner != -1:
-            return (5**5) * 1 if winner == self.current_player_idx else -1
+            return (5**5) * (1 if winner == self.current_player_idx else -1)
         transposed = self._board.transpose()
         
         x_score = []
@@ -204,19 +204,19 @@ class CustomGame(Game):
 
         score_x, score_o = 5**max(x_score), 5**max(o_score)
         score = score_x - score_o
-        score *= 1 if self.current_player_idx == 1 else -1
+        score *= 1 if self.current_player_idx == 0 else -1
         return score
     
     def simulate_move(self, move: "CompleteMove") -> "CustomGame":
         copy = deepcopy(self)
         investigating = copy.is_valid(move)
-        success = copy._Game__move(*move, copy.next_move_for)
+        success = copy._Game__move(*move, copy.current_player_idx)
         if success:
             copy.current_player_idx = 1-copy.current_player_idx
 
         if success != investigating:
             print("AAAA SOMEHOW IS_VALID is different thant Game.move validation")
-            print(f"board {copy} - move {move} move for {copy.next_move_for}")
+            print(f"board {copy} - move {move} move for {copy.current_player_idx}")
 
         return copy
 
