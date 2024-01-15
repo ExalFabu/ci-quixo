@@ -213,11 +213,7 @@ class CustomGame(Game):
         success = copy._Game__move(*move, copy.current_player_idx)
         if success:
             copy.current_player_idx = 1-copy.current_player_idx
-
-        if success != investigating:
-            print("AAAA SOMEHOW IS_VALID is different thant Game.move validation")
-            print(f"board {copy} - move {move} move for {copy.current_player_idx}")
-
+        assert success == investigating, "AAAA SOMEHOW IS_VALID is different thant Game.move validation | board {copy} - move {move} move for {copy.current_player_idx}"
         return copy
 
 if __name__ == "__main__":
