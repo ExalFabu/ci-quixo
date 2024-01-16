@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from collections import defaultdict
 from copy import deepcopy
 from typing import TYPE_CHECKING, Literal
+import time
+from tqdm.auto import trange, tqdm
 if TYPE_CHECKING:
     from custom_game import CompleteMove
 
@@ -18,7 +20,7 @@ class MCTNode:
     constant_factor: float = field(default=1.4, init=False)
     utility: int = field(default=0, init=False)
     count: int = field(default=0, init=False)
-    children: dict["MCTNode", "CompleteMove"] = field(default_factory=lambda: dict(), init=False)
+    children: dict["CompleteMove", "MCTNode"] = field(default_factory=lambda: dict(), init=False)
 
     def ucb(self, constant_factor = None):
         if self.count == 0:
@@ -29,57 +31,103 @@ class MCTNode:
     
     def is_terminal(self) -> bool:
         return self.state.check_winner() != -1
-    
-    def __hash__(self) -> int:
-        return hash(str(self.state) + str(hash(self.parent)) + f"{self.utility}/{self.count}")
 
 @dataclass
 class MCTSPlayer(Player):
     
     games: int = field(default=1000)
-    stats: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
+    sim_heuristic: bool = field(default=False)
+    progress: bool = field(default=False)
+    _stats: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
     
     def make_move(self, game: Game) -> tuple[tuple[int, int], Move]:
-        
+        start = time.time()
         root_cg = CustomGame.from_game(game)
 
         root = MCTNode(root_cg, None)
-
-        for _ in range(self.games):
+        if self.progress:
+            rg = trange(self.games, unit="games", leave=False)
+        else:
+            rg = range(self.games)
+        for _ in rg:
+            self.progress and rg.set_postfix({"phase": "select"})
             leaf = self._select(root)
+            self.progress and rg.set_postfix({"phase": "expand"})
             child = self._expand(leaf)
+            self.progress and rg.set_postfix({"phase": "simulate"})
             score = self._simulate(child)
+            self.progress and rg.set_postfix({"phase": "backprop"})
             self._backpropagate(child, score)
         
-        best_move = max(root.children.items(), key=lambda it: it[0].count)[1]
+        best_move = max(root.children.items(), key=lambda it: it[1].count)[0]
         if best_move not in root_cg.valid_moves(None, False, False):
-            self.stats['eval-invalid'] += 1
+            self._stats['eval-invalid'] += 1
+            best_move = random.choice(root_cg.valid_moves(None, False, False))
+        else:
+            self._stats['evals'] += 1
+            self._stats['evals-ms'] += time.time()-start
         return best_move
 
     def _select(self, node: "MCTNode") -> "MCTNode":
         if node.children:
-            return self._select(max(node.children.keys(), key=MCTNode.ucb))
+            return self._select(max(node.children.values(), key=MCTNode.ucb))
         else:
             return node
         
     def _expand(self, node: "MCTNode") -> "MCTNode":
         if not node.children or not node.is_terminal():
             node.children = {
-                MCTNode(node.state.simulate_move(move), node): move
-                for move in node.state.valid_moves(None, True, True)
+                move: MCTNode(node.state.simulate_move(move), node)
+                for move in node.state.valid_moves(None, False, False)
             }
         return self._select(node)
     
-    def _select_move_in_simulation(self, game: "CustomGame") -> "CompleteMove":
-        return random.choice(game.valid_moves(None, True, True))
-        
+    def _select_move_in_simulation(self, game: "CustomGame", i: int = 0) -> tuple["CompleteMove", "CustomGame"]:
+        if self.sim_heuristic:
+            moves =  game.valid_moves(None, True, True)
+            games = [game.simulate_move(move) for move in moves]
+            
+            mg = zip(moves, games)
+            score_sorted_move_games = sorted(mg, key=lambda it: it[1].score)
+            return score_sorted_move_games[i % len(score_sorted_move_games)]
+        else:
+            move = random.choice(game.valid_moves(None, False, False))
+            return move, game.simulate_move(move)
+
     def _simulate(self, node: "MCTNode") -> int:
         starting_player = node.state.get_current_player()
         copy = deepcopy(node.state)
         winner = copy.check_winner()
+        counter = 0
+        if self.progress:
+            pbar = tqdm(None, desc="move", leave=False)
+        last_moves = [None, None]
+        dup_counter = 0
+        visited: dict[str, int] = defaultdict(int)
         while winner != -1:
-            move = self._select_move_in_simulation(copy)
-            copy = copy.simulate_move(move)
+            curr_player = copy.get_current_player()
+            if dup_counter > 40 and curr_player != starting_player:
+                move, copy = self._select_move_in_simulation(copy, dup_counter-20)
+                self._stats["loop-dodged"] += 1
+            else:
+                move, copy = self._select_move_in_simulation(copy)
+            
+            if last_moves[curr_player] == move:
+                dup_counter += 1
+            else:
+                dup_counter = 0
+
+
+            visited[str(copy)] += 1
+
+            if visited[str(copy)] > 50:
+                self._stats["deeploop-dodged"] += 1
+                move, copy = self._select_move_in_simulation(copy, visited[str(copy)]-50)
+
+
+            last_moves[curr_player] = move
+            self.progress and pbar.update(1)
+            self.progress and pbar.set_postfix({"board": str(copy), "move": move})
             winner = copy.check_winner()
 
         if winner == starting_player:
@@ -97,9 +145,37 @@ class MCTSPlayer(Player):
         if node.parent:
             self._backpropagate(node.parent, -score)
 
+
+    @property 
+    def _avg_time(self):
+        if self._stats['evals'] == 0:
+            return 0
+        return self._stats['evals-ms'] / self._stats['evals']
+    
+    @property
+    def stats(self):
+        return {
+            "Average time per move": f"{self._avg_time:.2f}s",
+            "Total Moves performed": self._stats['evals'],
+            "Loops Dodged": self._stats['loop-dodged'],
+            "Deep-Loop Dodged": self._stats['deeploop-dodged']
+        }
     
 if __name__ == "__main__":
     from helper import evaluate
     from main import RandomPlayer
-    m = MCTSPlayer(500)
-    evaluate(m, RandomPlayer(), 10, True)
+    from pprint import pprint
+    games_for_evaluation = 10
+    mcts_depth = 500
+    show_progress = False
+    ###
+    mr = MCTSPlayer(mcts_depth, False, show_progress)
+    print("---\t---")
+    print(f"MCTS({mcts_depth}) Simulating with random moves")
+    evaluate(mr, RandomPlayer(), games_for_evaluation, True)
+    pprint(mr.stats, sort_dicts=False)
+    mh = MCTSPlayer(mcts_depth, True, show_progress)
+    print("---\t---")
+    print(f"MCTS({mcts_depth}) Simulating with heuristic")
+    evaluate(mh, RandomPlayer(), games_for_evaluation, True)
+    pprint(mh.stats, sort_dicts=False)
