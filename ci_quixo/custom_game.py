@@ -61,12 +61,8 @@ class CustomGame(Game):
             print()
 
     def __repr__(self) -> str:
-        return f"{self.current_player_idx}|{self._board.flatten()}"
+        return str(self)
     
-    @property
-    def next_move_for(self) -> int:
-        """This is a fix to the fact that current_player_idx somehow indicates the player that has already moved (1 on game start??)"""
-        return 1-self.current_player_idx
 
     def __str__(self) -> str:
         arr: list[int] = deepcopy(self._board).flatten().tolist()
@@ -137,7 +133,7 @@ class CustomGame(Game):
     def valid_moves(self, player: int = None, filter_duplicates: bool = True, canon_unique: bool = False) -> tuple[CompleteMove]:
         if player is None:
             player = self.current_player_idx
-        valids = [it for it in POSSIBLE_MOVES if self._board[it.position[::-1]] == -1 or self._board[it.position[::-1]] == player]
+        valids = [it for it in POSSIBLE_MOVES if self.is_valid(it)]
         if not filter_duplicates:
             return valids
         s = defaultdict(list)
@@ -154,7 +150,8 @@ class CustomGame(Game):
         return tuple(non_duplicate)
     
     def is_valid(self: "CustomGame", move: "CompleteMove") -> bool:
-        return move in self.valid_moves(None, False)
+        copy = deepcopy(self)
+        return copy._Game__move(*move, copy.current_player_idx)
     
     def play(self, player1: "Player", player2: "Player", verbose: bool = False) -> int:
         '''Play the game. Returns the winning player'''
@@ -181,6 +178,8 @@ class CustomGame(Game):
     
     @property
     def score(self) -> int:
+        
+        # Reference: https://github.com/poyrazn/quixo/blob/77d876e0e9ce5c9aba677060a62713cb66243fef/players/aiplayer.py#L79
         winner = self.check_winner()
         if winner != -1:
             return (5**5) * (1 if winner == self.current_player_idx else -1)
@@ -213,10 +212,28 @@ class CustomGame(Game):
         success = copy._Game__move(*move, copy.current_player_idx)
         if success:
             copy.current_player_idx = 1-copy.current_player_idx
+        else:
+            print("Simulated invalid move")
         assert success == investigating, "AAAA SOMEHOW IS_VALID is different thant Game.move validation | board {copy} - move {move} move for {copy.current_player_idx}"
         return copy
 
+
+def benchmark(number: int = 1_000) -> None:
+    import timeit
+    pbar = tqdm(range(3), unit="test", leave=False)
+    ff = timeit.timeit(stmt="it.valid_moves(None, False, False)", setup="from custom_game import CustomGame;it = CustomGame()", number=number)
+    pbar.update(1)
+    tf = timeit.timeit(stmt="it.valid_moves(None, True, False)", setup="from custom_game import CustomGame;it = CustomGame()", number=number)
+    tfup = tf/ff
+    pbar.update(1)
+    tt = timeit.timeit(stmt="it.valid_moves(None, True, True)", setup="from custom_game import CustomGame;it = CustomGame()", number=number)
+    ttup = tt/ff
+    
+    pbar.update(1)
+
+    
+    print(f"Benchmark ({number}): Valid={ff:.2f}s  Dedup={tf:.2f}s ({tfup:+.0%}) CanonDedup={tt:.2f}s ({ttup:+.0%})")
+
 if __name__ == "__main__":
     from random import choice
-    a = CustomGame()
-    p = CompleteMove((0, 0), Move.BOTTOM)
+    benchmark()

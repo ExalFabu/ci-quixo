@@ -25,13 +25,15 @@ def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool =
     if p2 is None:
         p2 = RandomPlayer()
     won_as_first, won_as_second = 0, 0
-    for i in trange(games, desc="Evaluating player", unit="game"):
+    pbar = trange(games, desc="Evaluating player", unit="game")
+    for i in pbar:
         game = Game()
         if i % 2 == 0:
             won_as_first  += 1 if game.play(p1, p2) == 0 else 0
         else:
             won_as_second += 1 if game.play(p2, p1) == 1 else 0
-    wins = won_as_first + won_as_second
+        wins = won_as_first + won_as_second
+        pbar.set_postfix({"wins": f"{(wins/(i+1)):.1%}"})
     wins /= games
     won_as_first /= games/2        
     won_as_second /= games/2

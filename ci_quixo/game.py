@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from enum import Enum
 import numpy as np
+
 # Rules on PDF
 
 
@@ -36,7 +37,8 @@ class Player(ABC):
 class Game(object):
     def __init__(self) -> None:
         self._board = np.ones((5, 5), dtype=np.uint8) * -1
-        self.current_player_idx = 1
+        # Only change i made: start from 0 and flip after move in `play`... useless change but i couldn't wrap my mind around it..
+        self.current_player_idx = 0
 
     def get_board(self) -> np.ndarray:
         '''
@@ -57,54 +59,47 @@ class Game(object):
     def check_winner(self) -> int:
         '''Check the winner. Returns the player ID of the winner if any, otherwise returns -1'''
         # for each row
-        player = self.get_current_player()
-        winner = -1
         for x in range(self._board.shape[0]):
             # if a player has completed an entire row
             if self._board[x, 0] != -1 and all(self._board[x, :] == self._board[x, 0]):
-                # return winner is this guy
-                winner = self._board[x, 0]
-        if winner > -1 and winner != self.get_current_player():
-            return winner
+                # return the relative id
+                return self._board[x, 0]
         # for each column
         for y in range(self._board.shape[1]):
             # if a player has completed an entire column
             if self._board[0, y] != -1 and all(self._board[:, y] == self._board[0, y]):
                 # return the relative id
-                winner = self._board[0, y]
-        if winner > -1 and winner != self.get_current_player():
-            return winner
+                return self._board[0, y]
         # if a player has completed the principal diagonal
         if self._board[0, 0] != -1 and all(
             [self._board[x, x]
                 for x in range(self._board.shape[0])] == self._board[0, 0]
         ):
             # return the relative id
-            winner = self._board[0, 0]
-        if winner > -1 and winner != self.get_current_player():
-            return winner
+            return self._board[0, 0]
         # if a player has completed the secondary diagonal
         if self._board[0, -1] != -1 and all(
             [self._board[x, -(x + 1)]
              for x in range(self._board.shape[0])] == self._board[0, -1]
         ):
             # return the relative id
-            winner = self._board[0, -1]
-        return winner
+            return self._board[0, -1]
+        return -1
 
     def play(self, player1: Player, player2: Player) -> int:
         '''Play the game. Returns the winning player'''
         players = [player1, player2]
         winner = -1
         while winner < 0:
-            self.current_player_idx += 1
-            self.current_player_idx %= len(players)
             ok = False
             while not ok:
                 from_pos, slide = players[self.current_player_idx].make_move(
                     self)
                 ok = self.__move(from_pos, slide, self.current_player_idx)
             winner = self.check_winner()
+            # Only change I made: start from 0 and flip after move in `play`... useless change but i couldn't wrap my mind around it..
+            self.current_player_idx += 1
+            self.current_player_idx %= len(players)
         return winner
 
     def __move(self, from_pos: tuple[int, int], slide: Move, player_id: int) -> bool:
