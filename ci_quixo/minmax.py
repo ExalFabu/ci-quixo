@@ -1,16 +1,30 @@
-from game import Player, Game
-from custom_game import CustomGame, POSSIBLE_MOVES
 from typing import TYPE_CHECKING, Literal, Union
+try:
+    from game import Player, Game
+    from custom_game import CustomGame, POSSIBLE_MOVES
+    if TYPE_CHECKING:
+        from custom_game import CompleteMove
+except: 
+    from .game import Player, Game
+    from .custom_game import CustomGame, POSSIBLE_MOVES
+    if TYPE_CHECKING:
+        from .custom_game import CompleteMove
+
 import numpy as np
 from collections import defaultdict
 import random
 import time
 
-if TYPE_CHECKING:
-    from custom_game import CompleteMove
 
 
 class MinMaxPlayer(Player):
+    """ Minimax Player with alpha-beta pruning (togglable) and a hash-table to store previously evaluated states. 
+
+        There are 4 possible pruning 'levels' (explained in detail below), i believe the best tradeoff between pruning and speed is level 1,
+        going at a deeper level is just too much time wasted due to the time required to process the (ineffiently implemented) symmetries. 
+        To have an understanding of the difference of time there is a bencharmking function that shows it (see `custom_game.test_benchmark_symmetries`), spoiler: +2400%
+    """
+
     def __init__(
         self,
         max_depth: int = 2,
@@ -20,7 +34,7 @@ class MinMaxPlayer(Player):
         htable: bool = True,
 
     ) -> None:
-        """Minimax Player
+        """Init
 
         Args:
             max_depth (int, optional): Tree depth. Defaults to 2.
@@ -235,8 +249,13 @@ class MinMaxPlayer(Player):
             hitratio = self._stats["HTABLE-HIT"] / self._stats['HTABLE-MISS'] + self._stats['HTABLE-HIT']
             pp["HashTable HitRatio"] = f"{hitratio:.3%}"
         return pp
+    
 if __name__ == "__main__":
-    from helper import evaluate
+    try:
+        from helper import evaluate
+    except:
+        from .helper import evaluate
+
     from pprint import pprint
 
     mf = MinMaxPlayer(2, pruning=0, htable=False)

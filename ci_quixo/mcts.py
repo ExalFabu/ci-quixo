@@ -1,14 +1,21 @@
-from game import Game, Move, Player
-from custom_game import CustomGame
+from typing import TYPE_CHECKING, Literal
+try:
+    from game import Game, Move, Player
+    from custom_game import CustomGame
+    if TYPE_CHECKING:
+        from custom_game import CompleteMove
+except:
+    from .game import Game, Move, Player
+    from .custom_game import CustomGame
+    if TYPE_CHECKING:
+        from .custom_game import CompleteMove
+
 import numpy as np, random
 from dataclasses import dataclass, field
 from collections import defaultdict
 from copy import deepcopy
-from typing import TYPE_CHECKING, Literal
 import time
 from tqdm.auto import trange, tqdm
-if TYPE_CHECKING:
-    from custom_game import CompleteMove
 
 # implementation inspired from https://github.com/aimacode/aima-python/blob/61d695b37c6895902081da1f37baf645b0d2658a/games4e.py#L178
 

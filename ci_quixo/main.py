@@ -1,6 +1,9 @@
 # https://github.com/squillero/computational-intelligence/blob/master/2023-24/quixo/
 import random
-from game import Game, Move, Player
+try:
+    from game import Game, Move, Player
+except:
+    from .game import Game, Move, Player
 
 
 class RandomPlayer(Player):

@@ -1,12 +1,18 @@
+from typing import TYPE_CHECKING
+try:
+    from game import Game, Move
+    if TYPE_CHECKING:
+        from main import Player
+except:
+    from .game import Game, Move
+    if TYPE_CHECKING:
+        from .main import Player
+
 import numpy as np
-from game import Game, Move
 from collections import namedtuple, defaultdict
 from copy import deepcopy
-from typing import TYPE_CHECKING
 from tqdm.auto import tqdm
-
-if TYPE_CHECKING:
-    from main import Player
+import pytest
 
 Position = namedtuple("Position", ["x", "y"], defaults=[0, 0])
 POSSIBLE_POSITIONS = tuple(
@@ -218,7 +224,8 @@ class CustomGame(Game):
         return copy
 
 
-def benchmark(number: int = 1_000) -> None:
+@pytest.mark.benchmark
+def test_benchmark_symmetries(number: int = 1_000) -> None:
     import timeit
     pbar = tqdm(range(3), unit="test", leave=False)
     ff = timeit.timeit(stmt="it.valid_moves(None, False, False)", setup="from custom_game import CustomGame;it = CustomGame()", number=number)
@@ -236,4 +243,4 @@ def benchmark(number: int = 1_000) -> None:
 
 if __name__ == "__main__":
     from random import choice
-    benchmark()
+    test_benchmark_symmetries()

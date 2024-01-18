@@ -1,12 +1,17 @@
-import numpy as np
 from typing import TYPE_CHECKING
-from main import Move, RandomPlayer, Game
+try:
+    from main import Move, RandomPlayer, Game, Player
+    from custom_game import CustomGame
+    if TYPE_CHECKING:
+        from custom_game import CompleteMove
+except: 
+    from .main import Move, RandomPlayer, Game, Player
+    from .custom_game import CustomGame
+    if TYPE_CHECKING:
+        from .custom_game import CompleteMove
+
+import numpy as np
 from tqdm.auto import trange
-from custom_game import CustomGame
-from main import Player
-if TYPE_CHECKING:
-    from custom_game import CompleteMove
-    from game import Game
 
 def pprint_board(game: "Game"):
     board: np.ndarray = game.get_board()

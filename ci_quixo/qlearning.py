@@ -1,14 +1,19 @@
-from custom_game import CustomGame, POSSIBLE_MOVES, CompleteMove
-from game import Game, Move
+try:
+    from custom_game import CustomGame, POSSIBLE_MOVES, CompleteMove
+    from game import Game, Move
+    from main import RandomPlayer, Player
+except:
+    from .custom_game import CustomGame, POSSIBLE_MOVES, CompleteMove
+    from .game import Game, Move
+    from .main import RandomPlayer, Player
+
 from copy import deepcopy
 from collections import defaultdict
-from main import Player
 from typing import DefaultDict
 from dataclasses import dataclass, field
 from tqdm.auto import trange, tqdm
 import random, dill
 import numpy as np
-from main import RandomPlayer
 
 # QTable Structure
 # [key: board hash (str)]: {
@@ -34,7 +39,11 @@ def clamp(value, min_, max_):
 
 @dataclass
 class QLearning(Player):
-    
+    """QLearning attempt
+    @deprecated Maybe there are still some bugs, I have not looked into it that much, but i believe it's not the right approach because 
+    there are so many states and it needs A LOT of games to be able to learn and propagate it back (if it will ever) 
+    """
+
     qtable: QTable = field(
         default_factory=lambda: defaultdict(QLearning.__inner_defdict_builder)
     )
