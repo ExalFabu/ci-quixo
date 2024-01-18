@@ -1,6 +1,11 @@
-from ._players import *
-from .custom_game import CustomGame, Game
-from .helper import evaluate
+try:
+    from _players import *
+    from custom_game import CustomGame, Game
+    from helper import evaluate
+except:
+    from ._players import *
+    from .custom_game import CustomGame, Game
+    from .helper import evaluate
 import pytest
 
 @pytest.mark.evaluate
