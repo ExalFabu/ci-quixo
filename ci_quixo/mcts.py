@@ -21,31 +21,55 @@ from tqdm.auto import trange, tqdm
 
 @dataclass
 class MCTNode:
+    """Monte Carlo Tree Node
+
+    Wrapper for a node of the MCTS that contains the utility and count values, parent and children references
+    """
     
     state: "CustomGame" = field()
     parent: "MCTNode" = field()
-    constant_factor: float = field(default=1.4, init=False)
+    constant_factor: float = field(default=1.4)
     utility: int = field(default=0, init=False)
     count: int = field(default=0, init=False)
     children: dict["CompleteMove", "MCTNode"] = field(default_factory=lambda: dict(), init=False)
 
     def ucb(self, constant_factor = None):
-        if self.count == 0:
-            return float("inf")
+        """Upper Confidence Bound 1 applied to trees
+
+        Args:
+            constant_factor (float, optional): exploration parameter. Defaults to `sqrt(2)`.
+
+        Returns:
+            float: `self.utility/self.count + constant_factor * sqrt(log(parent.count)/(self.count))`. If it has never been visited, returns `+inf`
+        """
         if constant_factor is None:
             constant_factor = self.constant_factor
+        
+        if self.count == 0:
+            return float("inf")
         return self.utility / self.count + constant_factor * (np.sqrt(np.log(self.parent.count) / self.count))
-    
-    def is_terminal(self) -> bool:
-        return self.state.check_winner() != -1
 
 @dataclass
 class MCTSPlayer(Player):
+    """Monte Carlo Tree Search Player
+
+    Disclaimer:
+        Implementation took insipiration from looking at different sources, such as
+         - [Artificial Intelligence: a Modern Approach](https://aima.cs.berkeley.edu/) and it's code [here](https://github.com/aimacode/aima-python/blob/61d695b37c6895902081da1f37baf645b0d2658a/games4e.py#L178)
+         - [Monte Carlo Tree Search - Wikipedia](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search)
+    """
     
     games: int = field(default=1000)
+    """Number of games to play for each move"""
     sim_heuristic: bool = field(default=False)
+    """Whether to use an heuristic when simulating a node. 
+
+    If disabled, the simulation is played random, otherwise it uses the same scoring function used for minmax to determine the best next move
+    """
     progress: bool = field(default=False)
+    """Show progress bar while playing.. used this when I discovered that it could loop while playing using heuristic (see stats.loop and stats.deeploop :'))"""
     _stats: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
+    """Simple dict used to keep track of basic statistics, see property stats for a prettified version"""
     
     def make_move(self, game: Game) -> tuple[tuple[int, int], Move]:
         start = time.time()
@@ -82,7 +106,7 @@ class MCTSPlayer(Player):
             return node
         
     def _expand(self, node: "MCTNode") -> "MCTNode":
-        if not node.children or not node.is_terminal():
+        if not node.children or node.state.check_winner() == -1:
             node.children = {
                 move: MCTNode(node.state.simulate_move(move), node)
                 for move in node.state.valid_moves(None, False, False)
