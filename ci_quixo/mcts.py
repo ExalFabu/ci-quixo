@@ -59,7 +59,7 @@ class MCTSPlayer(Player):
          - [Monte Carlo Tree Search - Wikipedia](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search)
     """
     
-    games: int = field(default=1000)
+    games: int = field(default=500)
     """Number of games to play for each move"""
     sim_heuristic: bool = field(default=False)
     """Whether to use an heuristic when simulating a node. 

@@ -48,7 +48,7 @@ def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool =
         print(f"Wins as 2nd: {won_as_second:.2%}")
     return wins, won_as_first, won_as_second
 
-class Human(Player):
+class HumanPlayer(Player):
     def make_move(self, game: "Game") -> "CompleteMove":
         print("---\nIt's your turn")
         CustomGame.from_game(game).pprint()
