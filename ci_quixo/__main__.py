@@ -1,5 +1,5 @@
 try:
-    from _players import *
+    from _players import MinMaxPlayer, MCTSPlayer, RandomPlayer
     from helper import evaluate
 except:
     from ._players import *
@@ -8,27 +8,36 @@ import pytest
 from pprint import pprint
 
 GAMES = 100
-HIDE_PBAR = False
+HIDE_PBAR = True
 
 @pytest.mark.evaluate
 def test_minmax_vs_random():
     minmax = MinMaxPlayer()
 
     print("\n--- --- ---")
-    print("Minmax VS RandomPlayer")
+    print(f"{minmax.name} VS RandomPlayer")
     evaluate(minmax, RandomPlayer(), games=GAMES, display=True, hide_pbar=HIDE_PBAR)
-    print("MinMax Stats:")
+    print(f"{minmax.name} Stats:")
     pprint(minmax.stats, sort_dicts=False)
 
+@pytest.mark.evaluate
+def test_minmax3_vs_random():
+    minmax = MinMaxPlayer(3, pruning=2)
+
+    print("\n--- --- ---")
+    print(f"{minmax.name} VS RandomPlayer")
+    evaluate(minmax, RandomPlayer(), games=GAMES, display=True, hide_pbar=HIDE_PBAR)
+    print(f"{minmax.name} Stats:")
+    pprint(minmax.stats, sort_dicts=False)
 
 @pytest.mark.evaluate
 def test_mcts_r_vs_random():
     mcts = MCTSPlayer()
 
     print("\n--- --- ---")
-    print("MCTS(Random) vs RandomPlayer")
+    print(f"{mcts.name} vs RandomPlayer")
     evaluate(mcts, RandomPlayer(), games=GAMES, display=True, hide_pbar=HIDE_PBAR)
-    print("MCTS(Random) Stats:")
+    print(f"{mcts.name} Stats:")
     pprint(mcts.stats, sort_dicts=False)
 
 
@@ -37,22 +46,22 @@ def test_mcts_h_vs_random():
     mcts = MCTSPlayer(sim_heuristic=True)
 
     print("\n--- --- ---")
-    print("MCTS(Heuristic) vs RandomPlayer")
+    print(f"{mcts.name} vs RandomPlayer")
     evaluate(mcts, RandomPlayer(), games=GAMES, display=True, hide_pbar=HIDE_PBAR)
-    print("MCTS(Heuristic) Stats:")
+    print(f"{mcts.name} Stats:")
     pprint(mcts.stats, sort_dicts=False)
 
 
 @pytest.mark.evaluate
 def test_minmax_vs_mcts_random():
-    minmax: "MinMaxPlayer" = MinMaxPlayer()
+    minmax = MinMaxPlayer()
     mcts = MCTSPlayer()
     print("\n--- --- ---")
-    print("Minmax VS MCTS(Random)")
+    print(f"{minmax.name} VS {mcts.name}")
     evaluate(minmax, mcts, games=GAMES, display=True, hide_pbar=HIDE_PBAR)
-    print("MinMax Stats:")
+    print(f"{minmax.name} Stats:")
     pprint(minmax.stats, sort_dicts=False)
-    print("MCTS(Random) Stats:")
+    print(f"{mcts.name} Stats:")
     pprint(mcts.stats, sort_dicts=False)
 
 @pytest.mark.evaluate
@@ -61,11 +70,11 @@ def test_minmax_vs_mcts_heuristic():
     mcts = MCTSPlayer(sim_heuristic=True)
 
     print("\n--- --- ---")
-    print("Minmax VS MCTS(Heuristic)")
+    print(f"{minmax.name} VS {mcts.name}")
     evaluate(minmax, mcts, games=GAMES, display=True, hide_pbar=HIDE_PBAR)
-    print("MinMax Stats:")
+    print(f"{minmax.name} Stats:")
     pprint(minmax.stats, sort_dicts=False)
-    print("MCTS(Heuristic) Stats:")
+    print(f"{mcts.name} Stats:")
     pprint(mcts.stats, sort_dicts=False)
 
 
