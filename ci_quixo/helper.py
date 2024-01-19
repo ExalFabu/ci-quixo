@@ -24,13 +24,13 @@ def pprint_board(game: "Game"):
             print(c, end="")
         print()
 
-def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool = False) -> tuple[int]:
+def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool = False, hide_pbar: bool = False) -> tuple[int]:
     if games % 2 != 0:
         games += 1
     if p2 is None:
         p2 = RandomPlayer()
     won_as_first, won_as_second = 0, 0
-    pbar = trange(games, desc="Evaluating player", unit="game")
+    pbar = trange(games, desc="Evaluating player", unit="game") if not hide_pbar else range(games)
     for i in pbar:
         game = Game()
         if i % 2 == 0:
@@ -38,7 +38,7 @@ def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool =
         else:
             won_as_second += 1 if game.play(p2, p1) == 1 else 0
         wins = won_as_first + won_as_second
-        pbar.set_postfix({"wins": f"{(wins/(i+1)):.1%}"})
+        not hide_pbar and pbar.set_postfix({"wins": f"{(wins/(i+1)):.1%}"})
     wins /= games
     won_as_first /= games/2        
     won_as_second /= games/2
