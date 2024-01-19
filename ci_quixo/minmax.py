@@ -64,6 +64,10 @@ class MinMaxPlayer(Player):
 
         self._stats = defaultdict(int)
 
+    @property
+    def name(self) -> str:
+        return f"MinMax(depth={self.max_depth}, alpha_beta={self.use_alpha_beta_pruning}, pruning={self.pruning_level}, use_htable={self.use_htable})"
+
     def make_move(self, game: Game) -> "CompleteMove":
         start = time.time()
         cg = CustomGame.from_game(game)

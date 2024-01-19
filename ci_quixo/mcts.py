@@ -70,6 +70,11 @@ class MCTSPlayer(Player):
     """Show progress bar while playing.. used this when I discovered that it could loop while playing using heuristic (see stats.loop and stats.deeploop :'))"""
     _stats: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
     """Simple dict used to keep track of basic statistics, see property stats for a prettified version"""
+
+    
+    @property
+    def name(self) -> str:
+        return f"MCTS(games={self.games}, use_heuristic_in_simulation={self.sim_heuristic})"
     
     def make_move(self, game: Game) -> tuple[tuple[int, int], Move]:
         start = time.time()
