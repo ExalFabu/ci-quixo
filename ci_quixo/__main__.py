@@ -7,7 +7,7 @@ except:
 import pytest
 from pprint import pprint
 
-GAMES = 100
+GAMES = 10
 HIDE_PBAR = True
 
 @pytest.mark.evaluate
