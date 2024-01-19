@@ -7,7 +7,7 @@ except:
 import pytest
 from pprint import pprint
 
-GAMES = 1
+GAMES = 100
 
 @pytest.mark.evaluate
 def test_minmax_vs_random():
