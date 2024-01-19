@@ -240,13 +240,13 @@ class MinMaxPlayer(Player):
         am, thm = self._stats["MOVES-ACTUAL"], self._stats["MOVES-THEORETICAL"]
         pp = {
             "Average time per move": f"{self._avg_time:.2f}s",  
-            f"Pruning lvl. {self.pruning_level} effectiveness": f"{(1-(am/thm)):.2%}",
+            f"Pruning lvl. {self.pruning_level} discount": f"{(1-(am/thm)):.2%}",
             "Total Moves performed": self._stats["evals"]
         }
         if self._stats["EVAL-invalidmove"] != 0:
             pp['Invalid Moves performed'] = self._stats["EVAL-invalidmove"]
         if self.use_htable:
-            hitratio = self._stats["HTABLE-HIT"] / self._stats['HTABLE-MISS'] + self._stats['HTABLE-HIT']
+            hitratio = self._stats["HTABLE-HIT"] / (self._stats['HTABLE-MISS'] + self._stats['HTABLE-HIT'])
             pp["HashTable HitRatio"] = f"{hitratio:.3%}"
         return pp
     
