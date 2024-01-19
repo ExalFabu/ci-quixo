@@ -156,9 +156,8 @@ class CustomGame(Game):
         return tuple(non_duplicate)
     
     def is_valid(self: "CustomGame", move: "CompleteMove") -> bool:
-        copy = deepcopy(self)
-        return copy._Game__move(*move, copy.current_player_idx)
-    
+        return self._board[move[0][1], move[0][0]] == -1 or self._board[move[0][1], move[0][0]] == self.current_player_idx
+
     def play(self, player1: "Player", player2: "Player", verbose: bool = False) -> int:
         '''Play the game. Returns the winning player'''
         players = [player1, player2]
