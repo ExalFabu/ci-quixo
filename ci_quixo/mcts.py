@@ -71,6 +71,9 @@ class MCTSPlayer(Player):
     _stats: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
     """Simple dict used to keep track of basic statistics, see property stats for a prettified version"""
 
+    @property
+    def short_name(self) -> str:
+        return f"MCTS({'H' if self.sim_heuristic else 'R'}, {self.games})"
     
     @property
     def name(self) -> str:

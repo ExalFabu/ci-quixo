@@ -22,6 +22,11 @@ class Player(ABC):
         '''You can change this for your player if you need to handle state/have memory'''
         pass
 
+    @property
+    def name(self) -> None:
+        '''Player Name'''
+        "Player"
+
     @abstractmethod
     def make_move(self, game: 'Game') -> tuple[tuple[int, int], Move]:
         '''

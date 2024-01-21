@@ -65,6 +65,10 @@ class MinMaxPlayer(Player):
         self._stats = defaultdict(int)
 
     @property
+    def short_name(self) -> str:
+        return f"MinMax({'AB, ' if self.use_alpha_beta_pruning else ''}D{self.max_depth}, P{self.pruning_level}{', H' if self.use_htable else ''})"
+
+    @property
     def name(self) -> str:
         return f"MinMax(depth={self.max_depth}, alpha_beta={self.use_alpha_beta_pruning}, pruning={self.pruning_level}, use_htable={self.use_htable})"
 
@@ -77,7 +81,7 @@ class MinMaxPlayer(Player):
             best_move = random.choice(cg.valid_moves())
         else:
             self._stats['evals'] += 1
-            self._stats['evals-ms'] += time.time() - start
+            self._stats['evals-ms'] += (time.time() - start)
             
         
         return best_move
@@ -236,7 +240,7 @@ class MinMaxPlayer(Player):
     def _avg_time(self):
         if self._stats['evals'] == 0:
             return 0
-        return self._stats['eval-ms'] / self._stats['evals']
+        return self._stats['evals-ms'] / self._stats['evals']
     
 
     @property

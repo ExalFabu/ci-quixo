@@ -31,4 +31,8 @@ jobs:
     - name: Test with pytest
       if: contains(github.event.head_commit.message, 'EVAL')
       run: |
-        python -m pytest ci_quixo/__main__.py -m evaluate -s
+        python -m ci_quixo
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      title: Generate nuove foto di eval
+      commit-message: updated results picture
