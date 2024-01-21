@@ -34,5 +34,6 @@ jobs:
         python -m ci_quixo
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5
-      title: Generate nuove foto di eval
-      commit-message: updated results picture
+      with:
+        title: Generate nuove foto di eval
+        commit-message: updated results picture
