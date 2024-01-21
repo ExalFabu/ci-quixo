@@ -28,7 +28,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Test with pytest
+    - name: Evaluate
       if: contains(github.event.head_commit.message, 'EVAL')
       run: |
         python -m ci_quixo
