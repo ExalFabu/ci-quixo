@@ -11,6 +11,7 @@ numpy = "^1.26.3"
 pytest = "^7.4.4"
 tqdm = "^4.66.1"
 dill = "^0.3.7"
+matplotlib = "^3.8.2"
 
 
 [build-system]
