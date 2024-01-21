@@ -178,9 +178,9 @@ class MinMaxPlayer(Player):
             for move, copy in moves_getter(game, depth):
                 assert copy.get_current_player() == whoami, "Something went wrong"
                 min_found = min(min_found, max_side(self, copy, alpha, beta, depth + 1))
-                beta = min(beta, min_found)
-                if alpha > beta and self.use_alpha_beta_pruning:
+                if alpha >= min_found and self.use_alpha_beta_pruning:
                     break
+                beta = min(beta, min_found)
 
             self.put_in_htable(game, depth, "l", min_found)
             return min_found
@@ -205,9 +205,9 @@ class MinMaxPlayer(Player):
             for move, copy in moves_getter(game, depth):
                 assert copy.get_current_player() == 1-whoami, "Something went wrong"
                 max_found = max(max_found, min_side(self, copy, alpha, beta, depth + 1))
-                alpha = max(alpha, max_found)
-                if alpha > beta and self.use_alpha_beta_pruning:
+                if max_found >= beta and self.use_alpha_beta_pruning:
                     break
+                alpha = max(alpha, max_found)
 
             self.put_in_htable(game, depth, "h", max_found)
             return max_found
