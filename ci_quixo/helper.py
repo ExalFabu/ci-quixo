@@ -10,7 +10,7 @@ except:
     if TYPE_CHECKING:
         from .custom_game import CompleteMove
 
-import time
+import time, dill
 import numpy as np
 from tqdm.auto import trange
 from os import path
@@ -88,6 +88,8 @@ def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool =
 
 
 def gen_plots(results: list[Result]) -> None:
+    with open(path.join(PLOT_FOLDER, "results.bkp.pkl"), "wb+") as f:
+        dill.dump(results, f)
     plot_time_comparison(results)
     plot_wr_vs_random(results)
     
@@ -107,8 +109,8 @@ def plot_wr_vs_random(results: list[Result]) -> None:
         "Overall": wr
     }
 
-    x = np.arange(len(player_names)) * 1.6
-    width = 0.30  # the width of the bars
+    x = np.arange(len(player_names)*2, step=2)
+    width = 0.50  # the width of the bars
 
     
     fig, ax = plt.subplots(layout='constrained')
@@ -122,7 +124,7 @@ def plot_wr_vs_random(results: list[Result]) -> None:
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Win Rate (%)')
     ax.set_title('Agents Win Rate vs Random')
-    ax.set_xticks(x + width, player_names)
+    ax.set_xticks(x + width, player_names, rotation=-20)
     ax.legend(loc='upper left', ncols=3)
     ax.set_ylim(0, 120)
 
@@ -135,7 +137,7 @@ def plot_time_comparison(results: list[Result]) -> None:
     ys = [r.avg_time for r in results]
     xs = [r.p1.short_name for r in results]
     plt_title = "Average Seconds per Game (vs Random)"
-    plt.plot(xs, ys, 'o')
+    plt.plot(xs, ys, marker='o', linestyle='--')
     plt.title(plt_title)
     plt.ylabel("seconds")
     plt.yticks(ys)
