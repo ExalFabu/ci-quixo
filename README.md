@@ -18,11 +18,40 @@ The game Quixo is a Tic-Tac-Toe variant, played on a five-by-five board of cubes
 ## Navigate through the code
 
 - `custom_game.py`: Wrapper around Game class, with some utility methods and symmetry (canonical representation) handling
-- `minmax.py` and `mcts.py`: Player's files
+- `minmax.py`: Minmax implementation
+  - Features:
+    - Depth-Limited
+    - Alpha-Beta Pruning
+    - Hash-Tables
+    - Different Pruning Levels:
+      - Pruning lvl 0 - No Pruning, at each node consider all possible moves
+      - Pruning lvl 1 - At each node consider only the moves that land on different boards 
+      - Pruning lvl 2 - At each node consider only the moves that land on different boards and that are not symmetric to each other
+      - Pruning lvl 3 - At each node consider only the moves that land on different boards and that are not symmetric to each other and that are not have been already visited on a higher level (not really that useful since we limit to a depth of 3, so there really is not a chance for a cycle to happen)  
+- `mcts.py`: MonteCarlo Tree Search implementation
+  - Features:
+    - Random
+    - w/ Heuristic
 - `__main__.py`: containis the code to perform the evaluation
+
+## Results obtained
+
+### Vs Random
+
+|                    Agent                          | Games | Win Rate (%) | Average Time per Game (s) | Average Time per Move (s) | Total Number of Moves |
+|:-------------------------------------------------:|:-----:|:------------:|:-------------------------:|:-------------------------:|:---------------------:|
+|   MinMax(AB,D2,P1) - αβ + Depth 2 + Pruning lvl 1 |  100  |      100     |            0.61           |            0.07           |          831          |
+|   MinMax(AB,D3,P2) - αβ + Depth 3 + Pruning lvl 2 |  100  |      100     |           11.97           |            1.47           |          816          |
+|      MCTS(R500) - 500 Games with Random Moves     |  100  |      84      |            8.91           |            0.90           |          985          |
+|        MCTS(H500) - 500 Games with Heuristic      |  100  |      79      |           52.45           |            4.42           |          1186         |
+
+![Win Rates](./ci_quixo/results/players_wr.png)
+
+![Time Comparison](./ci_quixo/results/time_comparison.png)
 
 ## Possible Improvements
 
 - [ ] Minmax w/ RankCut
 - [ ] Minmax w/ Singular Moves (should be easy and fast-enough using Hash Tables)
-- [ ] Minmax w/ Parallelization
+- [ ] Parallelization both on Minmax and MCTS
+- [ ] Lookup Tables for starting positions
