@@ -20,6 +20,8 @@ The game Quixo is a Tic-Tac-Toe variant, played on a five-by-five board of cubes
 - Montecarlo Tree Search
   - Random
   - w/ heuristic
+- QLearning
+  - An early attempt that was not promising, so I decided to not pursue it further. I left the code in the repo but I believe it is not working properly.
 
 ## Navigate through the code
 
