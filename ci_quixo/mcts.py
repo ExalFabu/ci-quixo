@@ -64,15 +64,19 @@ class MCTSPlayer(Player):
     sim_heuristic: bool = field(default=False)
     """Whether to use an heuristic when simulating a node. 
 
-    If disabled, the simulation is played random, otherwise it uses the same scoring function used for minmax to determine the best next move
+    If disabled, the simulation is played random
+    If enabled, it uses the same scoring function used for minmax to determine the best next move
     """
+
     progress: bool = field(default=False)
     """Show progress bar while playing.. used this when I discovered that it could loop while playing using heuristic (see stats.loop and stats.deeploop :'))"""
+    
     _stats: dict[str, int] = field(default_factory=lambda: defaultdict(int), init=False)
     """Simple dict used to keep track of basic statistics, see property stats for a prettified version"""
 
     @property
     def short_name(self) -> str:
+        """Used in graphs pictures"""
         return f"MCTS({'H' if self.sim_heuristic else 'R'}, {self.games})"
     
     @property
@@ -85,29 +89,35 @@ class MCTSPlayer(Player):
 
         root = MCTNode(root_cg, None)
         if self.progress:
-            rg = trange(self.games, unit="games", leave=False)
+            range_games = trange(self.games, unit="games", leave=False)
         else:
-            rg = range(self.games)
-        for _ in rg:
-            self.progress and rg.set_postfix({"phase": "select"})
+            range_games = range(self.games)
+        for _ in range_games:
+            self.progress and range_games.set_postfix({"phase": "select"})
             leaf = self._select(root)
-            self.progress and rg.set_postfix({"phase": "expand"})
+            
+            self.progress and range_games.set_postfix({"phase": "expand"})
             child = self._expand(leaf)
-            self.progress and rg.set_postfix({"phase": "simulate"})
+            
+            self.progress and range_games.set_postfix({"phase": "simulate"})
             score = self._simulate(child)
-            self.progress and rg.set_postfix({"phase": "backprop"})
+            
+            self.progress and range_games.set_postfix({"phase": "backprop"})
             self._backpropagate(child, score)
         
+        # The Best Move is the child of the root that has been visited the most
         best_move = max(root.children.items(), key=lambda it: it[1].count)[0]
+        self._stats['evals'] += 1
+
         if best_move not in root_cg.valid_moves(None, False, False):
             self._stats['eval-invalid'] += 1
             best_move = random.choice(root_cg.valid_moves(None, False, False))
         else:
-            self._stats['evals'] += 1
             self._stats['evals-ms'] += time.time()-start
         return best_move
 
     def _select(self, node: "MCTNode") -> "MCTNode":
+        """Select Phase - Choose the leaf using UCB function"""
         if node.children:
             return self._select(max(node.children.values(), key=MCTNode.ucb))
         else:
@@ -115,37 +125,62 @@ class MCTSPlayer(Player):
         
     def _expand(self, node: "MCTNode") -> "MCTNode":
         if not node.children or node.state.check_winner() == -1:
+            # If the node has no children and is not a terminal state, expand all the children
             node.children = {
                 move: MCTNode(node.state.simulate_move(move), node)
                 for move in node.state.valid_moves(None, False, False)
             }
+        
         return self._select(node)
     
     def _select_move_in_simulation(self, game: "CustomGame", i: int = 0) -> tuple["CompleteMove", "CustomGame"]:
+        """Move selector in simulation phase - What moves are going to be played?
+
+        Args:
+            game (CustomGame): Game board
+            i (int): In case we are in a loop, start getting sub-optimal moves to escape
+        
+        Returns:
+            tuple[CompleteMove, CustomGame]: Move and Game
+        """
+
         if self.sim_heuristic:
+            # If we are using an heuristic, sort them accordingly to the score of the landing state
             moves =  game.valid_moves(None, True, True)
             games = [game.simulate_move(move) for move in moves]
             
             mg = zip(moves, games)
             score_sorted_move_games = sorted(mg, key=lambda it: it[1].score)
+            # Start escaping the loop
             return score_sorted_move_games[i % len(score_sorted_move_games)]
         else:
+            # Play random
             move = random.choice(game.valid_moves(None, False, False))
             return move, game.simulate_move(move)
 
     def _simulate(self, node: "MCTNode") -> int:
+        """Simulate Phase - Plays one single game"""
+
         starting_player = node.state.get_current_player()
+
         copy = deepcopy(node.state)
         winner = copy.check_winner()
-        counter = 0
+
         if self.progress:
             pbar = tqdm(None, desc="move", leave=False)
+
+        # Used to detect "simple loops" (A and B play always the same move)
         last_moves = [None, None]
         dup_counter = 0
+        
+        # Used to detect "deep loops" (A and B land on a state that has been visited more than 50 times)
         visited: dict[str, int] = defaultdict(int)
+        
         while winner != -1:
             curr_player = copy.get_current_player()
-            if dup_counter > 40 and curr_player != starting_player:
+
+            if dup_counter > 40:
+                # If we are in a simple loop, start playing other moves
                 move, copy = self._select_move_in_simulation(copy, dup_counter-20)
                 self._stats["loop-dodged"] += 1
             else:
@@ -160,13 +195,15 @@ class MCTSPlayer(Player):
             visited[str(copy)] += 1
 
             if visited[str(copy)] > 50:
+                # Deep loop 
                 self._stats["deeploop-dodged"] += 1
                 move, copy = self._select_move_in_simulation(copy, visited[str(copy)]-50)
 
-
             last_moves[curr_player] = move
+
             self.progress and pbar.update(1)
             self.progress and pbar.set_postfix({"board": str(copy), "move": move})
+            
             winner = copy.check_winner()
 
         if winner == starting_player:
@@ -177,6 +214,8 @@ class MCTSPlayer(Player):
             return 1
     
     def _backpropagate(self, node: "MCTNode", score: Literal['-1', '1']) -> None:
+        """Backpropagate till the root"""
+
         if score > 0:
             node.utility += score
         node.count += 1
@@ -193,6 +232,7 @@ class MCTSPlayer(Player):
     
     @property
     def stats(self):
+        """Pretty Printed stats"""
         return {
             "Average time per move": f"{self._avg_time:.2f}s",
             "Total Moves performed": self._stats['evals'],
