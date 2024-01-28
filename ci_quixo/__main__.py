@@ -7,6 +7,7 @@ except:
     from .main import Player
     from .helper import evaluate, Result, gen_plots
 import dill, multiprocessing
+from typing import Callable
 dill.Pickler.dumps, dill.Pickler.loads = dill.dumps, dill.loads
 multiprocessing.reduction.ForkingPickler = dill.Pickler
 multiprocessing.reduction.dump = dill.dump
@@ -42,15 +43,43 @@ def test_minmax_vs_mcts_random() -> Result:
 def test_minmax_vs_mcts_heuristic() -> Result:
     return evaluate(minmax2, mcts_h, games=GAMES, display=DISPLAY_RES, hide_pbar=HIDE_PBAR)
 
-def call(it: callable) -> Result:
+def call(it: Callable[[], Result]) -> Result:
     return it()
 
-if __name__ == "__main__":
+def main(tests: list[Callable[[], Result]]): 
     from tqdm import tqdm
-    evals = [test_minmax_vs_random, test_minmax3_vs_random, test_mcts_r_vs_random, test_mcts_h_vs_random, test_minmax_vs_mcts_random, test_minmax_vs_mcts_heuristic][:]
+
+    if len(tests) == 0:
+        gen_plots(tests)
+        return
+
     if PARALLELIZE:
         with multiprocessing.Pool() as p:
-            RESULTS = list(tqdm(p.imap(call, evals), total=len(evals), unit="test", desc=f"Testing with {GAMES} games each"))
+            RESULTS = []
+            pbar = tqdm(p.imap(call, tests), total=len(tests), unit="test", desc=f"Testing with {GAMES} games each")
+            for it in pbar:
+                RESULTS.append(it)
+
     else:
-        RES = [it() for it in tqdm(evals, desc="Evaluating", unit="eval")]        
+        RESULTS = []
+        pbar = tqdm(tests, unit="test", desc=f"Testing with {GAMES} games each")
+        for it in pbar:
+            pbar.set_postfix({"current": it.__name__})
+            res = it()
+            RESULTS.append(res)
     gen_plots(RESULTS)
+
+
+if __name__ == "__main__":
+    VS_RANDOM = [test_minmax_vs_random, test_minmax3_vs_random, test_mcts_r_vs_random, test_mcts_h_vs_random]
+    VS_EACHOTHER = [test_minmax_vs_mcts_random, test_minmax_vs_mcts_heuristic]
+    ALL_ = [*VS_RANDOM, *VS_EACHOTHER]
+    # To use saved results
+    main([])
+    # To recalculate all of them
+    # main(ALL_)
+    # To test only one of them
+    # main([test_minmax_vs_random])
+
+    # To run this file, python -m ci_quixo (while in folder ci_quixo, not inside ci_quixo/ci_quixo)
+

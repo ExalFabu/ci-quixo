@@ -39,9 +39,12 @@ The game Quixo is a Tic-Tac-Toe variant, played on a five-by-five board of cubes
 |      MCTS(R500): 500 Games with Random Moves      |  100  |      84      |            8.91           |            0.90           |          985          |
 |        MCTS(H500): 500 Games with Heuristic       |  100  |      79      |           52.45           |            4.42           |          1186         |
 
-![Win Rates - https://i.imgur.com/EG4VHRS.png](./ci_quixo/results/players_wr.png)
+![Win Rates - https://i.imgur.com/pIBk1pu.png](./ci_quixo/results/players_wr.png)
 
-![Time Comparison - https://i.imgur.com/QyHemXw.png](./ci_quixo/results/time_comparison.png)
+![Time Comparison - https://i.imgur.com/PKC4pGO.png](./ci_quixo/results/time_comparison.png)
+
+![Above but Combined - https://i.imgur.com/1i7MSBi.png](./ci_quixo/results/players_wr_with_time.png)
+
 ## Possible Improvements
 
 - [ ] Minmax w/ RankCut

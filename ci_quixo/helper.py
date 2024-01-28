@@ -88,14 +88,22 @@ def evaluate(p1: "Player", p2: "Player" = None, games: int = 10, display: bool =
 
 
 def gen_plots(results: list[Result]) -> None:
-    with open(path.join(PLOT_FOLDER, "results.bkp.pkl"), "wb+") as f:
-        dill.dump(results, f)
+    if results is None:
+        results = []
+
+    if len(results) > 0:
+        with open(path.join(PLOT_FOLDER, "results.bkp.pkl"), "wb+") as f:
+            dill.dump(results, f)
+    else: 
+        with open(path.join(PLOT_FOLDER, "results.bkp.pkl"), "rb") as f:
+            results = dill.load(f)
     plot_time_comparison(results)
-    plot_wr_vs_random(results)
+    plot_wr_vs_random(results, True)
+    plot_wr_vs_random(results, False)
     
     pass
 
-def plot_wr_vs_random(results: list[Result]) -> None:
+def plot_wr_vs_random(results: list[Result], with_time: bool = False) -> None:
     results = [r for r in results if isinstance(r.p2, RandomPlayer)]
     
     player_names = [r.p1.short_name for r in results]
@@ -105,8 +113,8 @@ def plot_wr_vs_random(results: list[Result]) -> None:
 
     values = {
         "Played as 1st": wr1,
+        "Overall": wr,
         "Played as 2nd": wr2,
-        "Overall": wr
     }
 
     x = np.arange(len(player_names)*2, step=2)
@@ -115,20 +123,32 @@ def plot_wr_vs_random(results: list[Result]) -> None:
     
     fig, ax = plt.subplots(layout='constrained')
     multiplier = 0
+    xs = []
     for attribute, measurement in values.items():
         offset = width * multiplier
         rects = ax.bar(x + offset, measurement, width, label=attribute)
         ax.bar_label(rects, padding=3)
+        xs.append(x[1] + offset)
         multiplier += 1
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Win Rate (%)')
-    ax.set_title('Agents Win Rate vs Random')
     ax.set_xticks(x + width, player_names, rotation=-20)
     ax.legend(loc='upper left', ncols=3)
+    ax.set_yticks([20, 40, 60, 80, 100])
     ax.set_ylim(0, 120)
 
-    plt.savefig(path.join(PLOT_FOLDER, "players_wr.png"))
+    if with_time:
+        ax2 = ax.twinx()
+        ys = [r.avg_time for r in results]
+        ax2.plot(x+width, ys, marker='o', linestyle='--', color="C5")
+        plt.ylabel("Average Time per Game (s)", rotation=270, labelpad=15)
+        plt.yticks(ys)
+        plt.title("Average Win Rate and Time vs Random")
+        plt.savefig(path.join(PLOT_FOLDER, "players_wr_with_time.png"))
+    else:
+        ax.set_title('Agents Win Rate vs Random')
+        plt.savefig(path.join(PLOT_FOLDER, "players_wr.png"))
 
 
 def plot_time_comparison(results: list[Result]) -> None:
